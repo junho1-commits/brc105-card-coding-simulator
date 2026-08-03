@@ -3,7 +3,7 @@ export class SideViewRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas ? canvas.getContext('2d') : null;
-    this.altitudeScale = 70; // 1미터당 70픽셀
+    this.altitudeScale = 50; // 1미터당 50픽셀로 상승 공간 대폭 확충
     this.propellerAngle = 0;
   }
 
@@ -48,9 +48,9 @@ export class SideViewRenderer {
       ctx.fillRect(0, 0, width, height);
 
       // 2. 바닥 지면 (Ground Plane)
-      const groundY = height - 40;
+      const groundY = height - 30;
       ctx.fillStyle = '#1e293b';
-      ctx.fillRect(0, groundY, width, 40);
+      ctx.fillRect(0, groundY, width, 30);
       ctx.strokeStyle = '#10b981';
       ctx.lineWidth = 3;
       ctx.beginPath();
@@ -58,14 +58,14 @@ export class SideViewRenderer {
       ctx.lineTo(width, groundY);
       ctx.stroke();
 
-      // 3. 고도 가이드 눈금선 (0m, 1m, 2m, 3m)
+      // 3. 고도 가이드 눈금선 (0m ~ 4m)
       ctx.lineWidth = 1;
       ctx.font = '11px sans-serif';
       ctx.textAlign = 'right';
-      for (let alt = 1; alt <= 3; alt++) {
+      for (let alt = 1; alt <= 4; alt++) {
         const lineY = groundY - alt * this.altitudeScale;
         if (lineY > 0) {
-          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
           ctx.beginPath();
           ctx.moveTo(40, lineY);
           ctx.lineTo(width - 20, lineY);

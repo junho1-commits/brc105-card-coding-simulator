@@ -423,14 +423,14 @@ html, body {
   }
 }
 
-/* 2. Main Layout Grid (크롬북 최적화) */
+/* 2. Main Layout Grid (크롬북 최적화 & 넓은 시뮬레이터 공간) */
 .app-main-layout {
   display: grid;
-  grid-template-columns: 280px 1fr 360px;
+  grid-template-columns: 260px 1fr 440px;
   gap: 12px;
   padding: 12px;
   flex: 1;
-  min-height: 0; /* Flexbox 내 스크롤 허용 */
+  min-height: 0;
 }
 
 .panel {
@@ -841,8 +841,8 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 220px;
-  min-height: 180px;
+  height: 260px;
+  min-height: 220px;
   position: relative;
 }
 

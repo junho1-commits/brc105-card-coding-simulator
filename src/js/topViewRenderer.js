@@ -3,7 +3,7 @@ export class TopViewRenderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas ? canvas.getContext('2d') : null;
-    this.gridSize = 40;
+    this.gridSize = 28;
     this.centerX = 150;
     this.centerY = 150;
     this.propellerAngle = 0;
