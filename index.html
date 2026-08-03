@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRC-105 카드코딩 연습하기 | 언플러그드 드론 시뮬레이터</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/css/style.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- 1. Header Navigation -->
+    <header class="app-header">
+      <div class="logo-group">
+        <span class="drone-badge">BYROBOT</span>
+        <h1>🚁 BRC-105 카드코딩 연습하기</h1>
+      </div>
+      <div class="header-actions">
+        <select id="sampleSelect" class="styled-select">
+          <option value="">📜 예시 코스 선택...</option>
+        </select>
+        <select id="missionSelect" class="styled-select highlight-select">
+          <option value="">🎯 미션 도전 과제 선택...</option>
+        </select>
+        <button id="btnCertificate" class="btn btn-cert hidden">🎓 자격증 보기</button>
+        <button id="btnResetSlot" class="btn btn-secondary">🧹 슬롯 비우기</button>
+        <button id="btnHelp" class="btn btn-info">❓ 도움말</button>
+      </div>
+    </header>
+
+    <!-- 2. Main Grid Layout -->
+    <main class="app-main-layout">
+      <!-- Left Panel: Physical Card Library -->
+      <section class="panel library-panel">
+        <div class="panel-header">
+          <h2>🎴 카드 라이브러리</h2>
+          <span class="sub-text">카테고리 선택</span>
+        </div>
+        
+        <!-- Category Tabs -->
+        <div id="categoryTabs" class="category-tabs">
+          <!-- JS에서 동적 생성 -->
+        </div>
+
+        <!-- Cards Grid -->
+        <div id="cardsGrid" class="cards-grid">
+          <!-- JS에서 실물 카드 모양으로 생성 -->
+        </div>
+      </section>
+
+      <!-- Center Panel: Coding Slot Workspace -->
+      <section class="panel workspace-panel">
+        <div class="panel-header">
+          <h2>🧩 코딩 슬롯 작업 공간</h2>
+          <div class="status-indicator" id="executionStatus">
+            <span class="status-dot"></span>
+            <span id="statusText">대기 중</span>
+          </div>
+        </div>
+
+        <!-- Control Toolbar -->
+        <div class="control-toolbar">
+          <button id="btnRun" class="btn btn-primary btn-large">
+            <span>▶️</span> 비행 시작
+          </button>
+          <button id="btnStop" class="btn btn-danger btn-large" disabled>
+            <span>⏹️</span> 비행 중지
+          </button>
+          <div class="speed-toggle">
+            <label>비행 속도:</label>
+            <button class="btn-speed active" data-speed="1.0">1.0x</button>
+            <button class="btn-speed" data-speed="1.5">1.5x</button>
+            <button class="btn-speed" data-speed="2.0">2.0x</button>
+          </div>
+        </div>
+
+        <!-- Card Assembly Slot Tray -->
+        <div class="slot-container-wrapper">
+          <div id="slotsContainer" class="slots-container">
+            <div class="empty-slot-msg">
+              <span>🎴 카드를 선택하거나 클릭하여 여기에 배열하세요</span>
+              <p>기본 추천: [코딩 시작] ➔ [이륙] ➔ [이동/회전] ➔ [착륙] ➔ [코딩 끝]</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mission Board Container (빨간 네모 박스 위치: 큼직한 미션 안내 보드) -->
+        <div id="missionBoard" class="mission-board-card">
+          <div class="mission-board-header">
+            <div class="mission-title-group">
+              <span id="missionDiff" class="mission-badge-large">🎯 미션 모드</span>
+              <h3 id="missionTitle">도전할 미션을 상단에서 선택하세요!</h3>
+            </div>
+            <button id="btnMissionHint" class="btn btn-hint-large hidden">💡 힌트 보기</button>
+          </div>
+          <div class="mission-board-body">
+            <p id="missionGoal" class="mission-goal-large">
+              상단 <strong style="color: var(--accent-cyan);">[🎯 미션 도전 과제 선택...]</strong> 메뉴에서 미션을 선택하면 이곳에 목표가 커다랗게 나타납니다!
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Dual View Simulator (Top & Side Views) -->
+      <section class="panel simulator-panel">
+        <div class="panel-header">
+          <h2>🛰️ 듀얼 뷰 비행 시뮬레이터</h2>
+          <div class="drone-live-telemetry">
+            <span>고도: <strong id="telemetryAlt">0.0m</strong></span>
+            <span>방향: <strong id="telemetryHeading">0°</strong></span>
+            <span>LED: <strong id="telemetryLed">OFF</strong></span>
+          </div>
+        </div>
+
+        <div class="views-split-container">
+          <!-- Top View (위에서 본 장면) -->
+          <div class="view-box top-view-box">
+            <div class="view-title">
+              <span>👁️ 위에서 본 장면 (Top View)</span>
+              <span class="view-tag">X-Y 평면</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="topViewCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Side View (옆에서 본 장면) -->
+          <div class="view-box side-view-box">
+            <div class="view-title">
+              <span>👁️ 옆에서 본 장면 (Side View)</span>
+              <span class="view-tag">Z축 고도</span>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="sideViewCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Student Name Modal -->
+    <div id="studentNameModal" class="modal-overlay hidden">
+      <div class="modal-content name-modal-content">
+        <div class="modal-header">
+          <h3>🎓 카드코딩 자격증 수여 안내</h3>
+        </div>
+        <div class="modal-body">
+          <p class="cert-congrat-msg">🎉 축하합니다! 모든 미션을 성공적으로 완수하셨습니다!</p>
+          <p>공식 BRC-105 카드코딩 자격증에 인쇄될 <strong>학생의 이름</strong>을 입력해 주세요.</p>
+          <div class="name-input-group">
+            <input type="text" id="studentNameInput" placeholder="학생 이름 (예: 홍길동)" autocomplete="off">
+            <button id="btnSaveName" class="btn btn-primary btn-large">자격증 받기 🏆</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Official Certificate Modal -->
+    <div id="certificateModal" class="modal-overlay hidden">
+      <div class="modal-content cert-modal-content">
+        <div class="cert-close-bar">
+          <button id="btnPrintCert" class="btn btn-primary">🖨️ 자격증 인쇄 / 다운로드</button>
+          <button id="btnCloseCert" class="close-btn">&times;</button>
+        </div>
+        
+        <!-- Printable Certificate Area (가로 랜드스케이프 인증서) -->
+        <div id="printableCertificate" class="certificate-frame landscape-frame">
+          <div class="cert-border-outer">
+            <div class="cert-border-inner">
+              <!-- 모서리 문양 장식 -->
+              <div class="corner-ornament top-left">❖</div>
+              <div class="corner-ornament top-right">❖</div>
+              <div class="corner-ornament bottom-left">❖</div>
+              <div class="corner-ornament bottom-right">❖</div>
+
+              <div class="cert-header-group">
+                <span class="cert-badge-tag">OFFICIAL CERTIFICATE</span>
+                <h2>BRC-105 카드코딩 마스터 인증서</h2>
+                <p class="cert-sub-title">CERTIFICATE OF CARD CODING MASTER</p>
+              </div>
+
+              <div class="cert-content-flex">
+                <div class="cert-recipient-section">
+                  <div class="recipient-label">성 &nbsp; 명 :</div>
+                  <div id="certRecipientName" class="recipient-name">홍 길 동</div>
+                </div>
+
+                <div class="cert-body-paragraph">
+                  위 사람은 바이로봇(BYROBOT) <strong>BRC-105 언플러그드 코딩드론 마스터 과정</strong>의 모든 단계별 카드코딩 미션을 우수한 성적으로 완성하고, 3차원 드론 비행 시뮬레이션을 완벽하게 통합 제어하였으므로 이 인증서를 수여합니다.
+                </div>
+              </div>
+
+              <div class="cert-bottom-flex">
+                <div class="cert-info-column">
+                  <div><strong>인증 번호 :</strong> <span id="certNo">BRC-2026-CERT-8842</span></div>
+                  <div><strong>발급 일자 :</strong> <span id="certDate">2026년 8월 3일</span></div>
+                  <div><strong>교육 기관 :</strong> BRC-105 드론 카드코딩 아카데미</div>
+                </div>
+
+                <div class="cert-issuer-column">
+                  <div class="issuer-title">한국 언플러그드 드론 교육협회장</div>
+                  <div class="seal-container">
+                    <div class="official-seal">
+                      <span>교육협회</span>
+                      <small>직인</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>
