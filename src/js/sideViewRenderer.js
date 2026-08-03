@@ -8,21 +8,40 @@ export class SideViewRenderer {
   }
 
   resize() {
-    const rect = this.canvas.parentElement.getBoundingClientRect();
-    this.canvas.width = rect.width;
-    this.canvas.height = Math.max(300, rect.height);
+    if (!this.canvas) return;
+    const parent = this.canvas.parentElement;
+    const width = parent ? parent.clientWidth || 300 : 300;
+    const height = parent ? parent.clientHeight || 250 : 250;
+
+    this.canvas.width = Math.max(150, width);
+    this.canvas.height = Math.max(150, height);
+  }
+
+  drawRoundRect(ctx, x, y, w, h, r) {
+    if (ctx.roundRect) {
+      ctx.roundRect(x, y, w, h, r);
+      return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
   }
 
   render(droneState) {
-    if (!this.ctx) return;
-    const { width, height } = this.canvas;
+    if (!this.ctx || !droneState) return;
+    const width = this.canvas.width || 300;
+    const height = this.canvas.height || 250;
     const ctx = this.ctx;
 
     if (!droneState.isLanded) {
       this.propellerAngle += 0.35;
     }
 
-    // 1. 배경 (하늘 및 실내 배경 다크 블루 그래디언트)
+    // 1. 배경
     const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
     bgGradient.addColorStop(0, '#090d16');
     bgGradient.addColorStop(0.8, '#1e293b');
@@ -63,9 +82,8 @@ export class SideViewRenderer {
     ctx.fillText('0.0m (지면)', 34, groundY - 6);
 
     // 4. 드론 픽셀 위치 계산
-    // Side View에서는 X축 위치 (또는 복합 거리) + Z축 고도
-    const dronePx = width / 2 + (droneState.x * 30); 
-    const dronePy = groundY - (droneState.z * this.altitudeScale) - 15; // 15는 랜딩 기어 높이 offset
+    const dronePx = width / 2 + ((droneState.x || 0) * 30);
+    const dronePy = groundY - ((droneState.z || 0) * this.altitudeScale) - 15;
 
     // 5. 드론 측면 실루엣 (Side Profile)
     ctx.save();
@@ -79,20 +97,19 @@ export class SideViewRenderer {
     // 드론 메인 섀시
     ctx.fillStyle = '#334155';
     ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(-24, -8, 48, 14, 4);
+    ctx.lineWidth = 2.5;
+    this.drawRoundRect(ctx, -24, -8, 48, 14, 4);
     ctx.fill();
     ctx.stroke();
 
-    // 상단 돔 및 센서 커버
+    // 상단 돔
     ctx.fillStyle = '#1e293b';
     ctx.beginPath();
     ctx.arc(0, -8, 12, Math.PI, 0);
     ctx.fill();
     ctx.stroke();
 
-    // 랜딩 스키드 (하단 받침대)
+    // 랜딩 스키드
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -104,20 +121,18 @@ export class SideViewRenderer {
     ctx.lineTo(12, 14);
     ctx.stroke();
 
-    // 하단 컬러 센서 (실물 BRC-105 컬러 센서 렌더링)
+    // 하단 컬러 센서
     ctx.fillStyle = '#000000';
     ctx.fillRect(-6, 6, 12, 4);
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(-4, 8, 8, 2);
 
-    // 2개 측면 프로펠러 블레이드 & 모터
+    // 2개 측면 프로펠러
     const props = [-22, 22];
     props.forEach(px => {
-      // 모터 팟
       ctx.fillStyle = '#475569';
       ctx.fillRect(px - 3, -12, 6, 6);
 
-      // 프로펠러 회전 블레이드 잔상
       ctx.save();
       ctx.translate(px, -12);
       ctx.scale(Math.cos(this.propellerAngle), 1);
@@ -126,8 +141,8 @@ export class SideViewRenderer {
       ctx.restore();
     });
 
-    // 드론 LED 발광 모듈 (앞/뒤/중앙)
-    if (droneState.ledColor !== 'off') {
+    // 드론 LED 발광 모듈
+    if (droneState.ledColor && droneState.ledColor !== 'off') {
       ctx.fillStyle = droneState.ledColor;
       ctx.shadowColor = droneState.ledColor;
       ctx.shadowBlur = 10;
@@ -139,10 +154,10 @@ export class SideViewRenderer {
 
     ctx.restore();
 
-    // 6. 비행 상태 및 고도 정보 Overlay 텍스트
+    // 6. Overlay 텍스트
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Side View (측면도) | 고도: ${droneState.z.toFixed(2)}m | 상태: ${droneState.isLanded ? '지면 착륙' : '공중 비행 중'}`, 12, 24);
+    ctx.fillText(`Side View (측면도) | 고도: ${(droneState.z||0).toFixed(2)}m | 상태: ${droneState.isLanded ? '지면 착륙' : '공중 비행 중'}`, 10, 20);
   }
 }

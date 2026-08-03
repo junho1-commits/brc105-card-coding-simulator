@@ -4,34 +4,54 @@ export class TopViewRenderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.gridSize = 40; // 1미터/1칸당 40픽셀
-    this.centerX = 0;
-    this.centerY = 0;
+    this.centerX = 150;
+    this.centerY = 150;
     this.propellerAngle = 0;
   }
 
   resize() {
-    const rect = this.canvas.parentElement.getBoundingClientRect();
-    this.canvas.width = rect.width;
-    this.canvas.height = Math.max(300, rect.height);
+    if (!this.canvas) return;
+    const parent = this.canvas.parentElement;
+    const width = parent ? parent.clientWidth || 300 : 300;
+    const height = parent ? parent.clientHeight || 250 : 250;
+
+    this.canvas.width = Math.max(150, width);
+    this.canvas.height = Math.max(150, height);
     this.centerX = this.canvas.width / 2;
     this.centerY = this.canvas.height / 2;
   }
 
+  // 둥근 사각형 브라우저 호환 함수 (roundRect 폴리필)
+  drawRoundRect(ctx, x, y, w, h, r) {
+    if (ctx.roundRect) {
+      ctx.roundRect(x, y, w, h, r);
+      return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
   render(droneState) {
-    if (!this.ctx) return;
-    const { width, height } = this.canvas;
+    if (!this.ctx || !droneState) return;
+    const width = this.canvas.width || 300;
+    const height = this.canvas.height || 250;
     const ctx = this.ctx;
 
     // 프로펠러 애니메이션 각도 증가
     if (!droneState.isLanded) {
-      this.propellerAngle += 0.3;
+      this.propellerAngle += 0.35;
     }
 
-    // 1. 배경 클리어 (다크 사이버 맵 느낌)
+    // 1. 배경 클리어 (다크 사이버 맵)
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, width, height);
 
-    // 2. 그리드 격자선 렌더링
+    // 2. 그리드 격자선
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
 
@@ -73,19 +93,15 @@ export class TopViewRenderer {
 
       droneState.trail.forEach((pt, idx) => {
         const px = this.centerX + pt.x * this.gridSize;
-        const py = this.centerY - pt.y * this.gridSize; // Y축 반전
+        const py = this.centerY - pt.y * this.gridSize;
         if (idx === 0) ctx.moveTo(px, py);
         else ctx.lineTo(px, py);
       });
       ctx.stroke();
-      ctx.shadowBlur = 0; // 그림자 초기화
+      ctx.shadowBlur = 0;
     }
 
-    // 5. 드론 위치 계산
-    const dronePx = this.centerX + droneState.x * this.gridSize;
-    const dronePy = this.centerY - droneState.y * this.gridSize;
-
-    // 6. 미션 목표 타겟 지정 위치 마커 (Target Marker)
+    // 5. 미션 목표 타겟 마커
     if (droneState.targetPos) {
       const targetPx = this.centerX + droneState.targetPos.x * this.gridSize;
       const targetPy = this.centerY - droneState.targetPos.y * this.gridSize;
@@ -104,7 +120,7 @@ export class TopViewRenderer {
       ctx.fillText('🎯 목표', targetPx, targetPy - 26);
     }
 
-    // 7. 착륙 지점 / 홈 마크
+    // 6. 착륙 지점 / 홈 마크
     ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
     ctx.strokeStyle = '#ef4444';
     ctx.lineWidth = 2;
@@ -117,15 +133,19 @@ export class TopViewRenderer {
     ctx.textAlign = 'center';
     ctx.fillText('H', this.centerX, this.centerY + 4);
 
-    // 7. 드론 본체 (Top-down View)
+    // 7. 드론 위치 계산
+    const dronePx = this.centerX + (droneState.x || 0) * this.gridSize;
+    const dronePy = this.centerY - (droneState.y || 0) * this.gridSize;
+
+    // 8. 드론 본체 렌더링 (Top-down View)
     ctx.save();
     ctx.translate(dronePx, dronePy);
-    ctx.rotate((droneState.heading * Math.PI) / 180);
+    ctx.rotate(((droneState.heading || 0) * Math.PI) / 180);
 
     const armLength = 22;
     const propRadius = 14;
 
-    // 4개 프로펠러 암 (X 자형)
+    // 4개 프로펠러 암
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 4;
     ctx.beginPath();
@@ -137,41 +157,38 @@ export class TopViewRenderer {
 
     // 4개 모터 팟 및 회전 프로펠러
     const props = [
-      { x: -armLength, y: -armLength, isFront: true, color: '#ef4444' }, // 앞좌 (빨강)
-      { x: armLength, y: -armLength, isFront: true, color: '#ef4444' },  // 앞우 (빨강)
-      { x: -armLength, y: armLength, isFront: false, color: '#3b82f6' }, // 뒤좌 (파랑)
-      { x: armLength, y: armLength, isFront: false, color: '#3b82f6' }   // 뒤우 (파랑)
+      { x: -armLength, y: -armLength, isFront: true, color: '#ef4444' },
+      { x: armLength, y: -armLength, isFront: true, color: '#ef4444' },
+      { x: -armLength, y: armLength, isFront: false, color: '#3b82f6' },
+      { x: armLength, y: armLength, isFront: false, color: '#3b82f6' }
     ];
 
     props.forEach(p => {
-      // 프로펠러 회전 잔상
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.isFront ? this.propellerAngle : -this.propellerAngle);
-      ctx.fillStyle = droneState.isLanded ? 'rgba(148, 163, 184, 0.3)' : 'rgba(56, 189, 248, 0.4)';
+      ctx.fillStyle = droneState.isLanded ? 'rgba(148, 163, 184, 0.4)' : 'rgba(56, 189, 248, 0.7)';
       ctx.beginPath();
       ctx.ellipse(0, 0, propRadius, 4, 0, 0, Math.PI * 2);
       ctx.ellipse(0, 0, 4, propRadius, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
 
-      // 모터 캡
       ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // 드론 메인 센터 바디 (BRC-105 형태)
+    // 드론 메인 센터 바디
     ctx.fillStyle = '#1e293b';
     ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.roundRect(-12, -14, 24, 28, 6);
+    ctx.lineWidth = 2.5;
+    this.drawRoundRect(ctx, -12, -14, 24, 28, 6);
     ctx.fill();
     ctx.stroke();
 
-    // 정면(앞쪽) 헤드 라이트 / 방향 표시 삼각형
+    // 정면 헤드 라이트
     ctx.fillStyle = '#f59e0b';
     ctx.beginPath();
     ctx.moveTo(0, -18);
@@ -181,7 +198,7 @@ export class TopViewRenderer {
     ctx.fill();
 
     // 센터 LED 발광 라이트
-    if (droneState.ledColor !== 'off') {
+    if (droneState.ledColor && droneState.ledColor !== 'off') {
       ctx.fillStyle = droneState.ledColor;
       ctx.shadowColor = droneState.ledColor;
       ctx.shadowBlur = 12;
@@ -193,10 +210,10 @@ export class TopViewRenderer {
 
     ctx.restore();
 
-    // 8. 뷰 정보 텍스트 Overlay
+    // 9. Overlay 텍스트
     ctx.fillStyle = '#94a3b8';
     ctx.font = '12px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Top View (조감도) | X: ${droneState.x.toFixed(1)}m | Y: ${droneState.y.toFixed(1)}m | 각도: ${droneState.heading}°`, 12, 24);
+    ctx.fillText(`Top View (조감도) | X: ${(droneState.x||0).toFixed(1)}m | Y: ${(droneState.y||0).toFixed(1)}m | 각도: ${Math.round(droneState.heading||0)}°`, 10, 20);
   }
 }
